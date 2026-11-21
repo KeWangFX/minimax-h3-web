@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#101315">
+  <title>H3 · 多图参考视频</title>
+  <link rel="stylesheet" href="./app.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#generation-form">跳到生成表单</a>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="H3 Motion Lab 首页"><span class="brand-mark">H3<span></span></span><span class="brand-name">MOTION LAB<small>本地影像工作台</small></span></a>
+    <div class="topbar-right"><span class="local-tag"><span class="dot"></span>LOCAL WORKFLOW</span><span class="topbar-divider"></span><span class="version">REFERENCES → VIDEO</span></div>
+  </header>
+
+  <main class="workspace">
+    <div class="page-heading"><div><p class="eyebrow">MINIMAX H3 / MULTI-FRAME REFERENCE</p><h1>多图参考视频<span>连接角色、场景和道具参考，可选中间帧约束。</span></h1></div><button id="refresh-status" class="button button-secondary refresh-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3"/></svg><span>检查运行环境</span></button></div>
+
+    <section id="public-pair-panel" class="pair-panel" aria-labelledby="pair-title" hidden>
+      <div class="pair-intro"><p class="eyebrow">YOUR COMPUTER · YOUR GPU</p><h2 id="pair-title">连接你的本机引擎</h2><p>网站提供操作界面，视频在当前电脑的 ComfyUI 中计算。不会上传到本站，也不会调用收费 API。</p><ol><li>启动本机 ComfyUI，准备 H3 节点和模型。</li><li><a href="./downloads/minimax-h3-web.zip" download>下载本机连接器</a>，解压后运行启动脚本。</li><li>输入连接器页面上的 6 位连接码。浏览器询问本地网络权限时请选择允许。</li></ol></div>
+      <form id="pair-form" class="pair-form"><label>本机连接器<input type="text" value="http://127.0.0.1:9860" readonly aria-label="本机连接器地址"></label><label for="pair-code">网页连接码<input id="pair-code" type="text" inputmode="numeric" autocomplete="off" maxlength="6" pattern="[0-9]{6}" placeholder="6 位数字" required></label><button id="pair-button" class="button button-primary" type="submit">连接本机引擎 <span aria-hidden="true">→</span></button><p id="pair-message" class="field-help" aria-live="polite">连接码只发往当前电脑的本机连接器。</p></form>
+    </section>
+    <div id="local-pair-code" class="local-pair-code" hidden><span>公网网页连接码 <strong id="local-code-value"></strong></span><button id="copy-pair-code" class="text-button" type="button">复制</button><small>仅供你在自己的浏览器配对，请勿发送给他人。</small></div>
+
+    <div id="connection-banner" class="connection-banner" role="status" aria-live="polite"><span class="status-light checking"></span><div><strong id="connection-title">正在检查本地环境</strong><span id="connection-description">仅连接本机 ComfyUI，不调用云端付费 API。</span></div><span id="connection-label" class="connection-label">检查中</span></div>
+
+    <div class="studio-grid">
+      <form id="generation-form" class="editor-panel" novalidate>
+        <section class="form-section">
+          <div class="section-heading"><h2><span class="step-number">01</span>上传参考图</h2><span class="field-hint">最多 9 张 · PNG / JPG / WEBP</span></div>
+          <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="选择角色、场景或道具参考图，支持一次上传多张，最多九张">
+            <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+            <div id="upload-empty" class="upload-empty"><span class="upload-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="5" width="24" height="22" rx="3"/><circle cx="11" cy="12" r="2"/><path d="m5 23 7-7 5 5 4-4 6 6"/></svg></span><strong>拖入多张图片，或点击上传</strong><p>人物、场景、道具分别参考，默认不指定出现时间</p><span class="choose-pill">选择参考图 <span aria-hidden="true">↗</span></span></div>
+          </div>
+          <div id="upload-info" class="upload-info" hidden><div><strong id="upload-name"></strong><span id="upload-meta">在提示词中用“参考图 1、参考图 2…”指定画面关系。</span></div><button id="remove-image" class="clear-button" type="button">清空</button></div>
+          <div id="reference-list" class="reference-list" aria-label="已上传的参考图片"></div>
+          <p id="upload-feedback" class="field-message" aria-live="polite"></p>
+        </section>
+
+        <section class="form-section prompt-section">
+          <div class="section-heading"><h2><label for="prompt"><span class="step-number">02</span>描述镜头</label></h2><button id="insert-reference-tags" class="text-button" type="button">插入参考编号</button><span id="prompt-count" class="field-hint">0 字</span></div>
+          <textarea id="prompt" name="prompt" rows="5" maxlength="12000" placeholder="描述各张参考图的用途、主体动作、运镜与光线。&#10;&#10;例如：采用参考图 1 的角色外形，在参考图 2 的场景中缓慢行走，手持参考图 3 的盾牌。镜头平稳跟随，保持造型和材质一致。" required aria-describedby="prompt-tip"></textarea>
+          <p id="prompt-tip" class="field-help">用 &lt;Picture1&gt;、&lt;Picture2&gt; 指定参考用途，再写动作与运镜。图片顺序不是视频时间顺序。</p>
+        </section>
+
+        <details class="advanced-panel" id="advanced-params">
+          <summary><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></svg>生成参数</span><span id="parameter-summary" class="parameter-summary">1344 × 768 · 50 步</span><span class="chevron" aria-hidden="true">⌄</span></summary>
+          <div class="advanced-content">
+            <label class="quality-label" for="quality-preset">质量预设<select id="quality-preset"><option value="quality">画质优先 · 1344 × 768 / 50 步</option><option value="standard">标准 · 1344 × 768 / 25 步</option><option value="experimental">实验大画幅 · 1920 × 1088 / 50 步</option><option value="custom">自定义参数</option></select></label>
+            <div class="preset-row"><span class="field-hint">画幅预设</span><div class="segmented"><button type="button" data-size="864,480" class="preset active" aria-pressed="true">横屏</button><button type="button" data-size="480,864" class="preset" aria-pressed="false">竖屏</button><button type="button" data-size="640,640" class="preset" aria-pressed="false">方形</button></div></div>
+            <div class="params-grid">
+              <label>宽度 <span>px</span><input id="width" type="number" min="256" max="8192" step="32" value="1344" required></label>
+              <label>高度 <span>px</span><input id="height" type="number" min="256" max="8192" step="32" value="768" required></label>
+              <label>原生帧率 <span>fps</span><input id="fps" type="number" min="24" max="24" step="1" value="24" readonly required></label>
+              <label>总帧数<input id="frames" type="number" min="5" max="362" step="17" value="124" required></label>
+              <label>采样步数<input id="steps" type="number" min="1" max="200" step="1" value="50" required></label>
+              <label>官方引导 <span>CFG</span><input id="cfg" type="number" min="1" max="1" step="1" value="1" readonly required></label>
+            </div>
+            <div class="model-params-grid"><label for="precision">模型精度<select id="precision"><option value="auto">自动 · 优先已安装 BF16</option><option value="bf16">BF16</option><option value="int8">INT8</option></select></label><label for="refImageSize">参考细节<select id="refImageSize"><option value="max">最大参考尺寸</option><option value="match">匹配输出尺寸</option></select></label><label for="scheduler">调度器<select id="scheduler"><option value="beta">Beta</option><option value="normal">Normal</option><option value="simple">Simple</option></select></label></div>
+            <div class="seed-row"><label for="seed">随机种子<input id="seed" type="number" min="0" max="4294967295" step="1" value="42" required></label><label class="checkbox-label"><input id="randomize" type="checkbox"><span>每次随机</span></label></div>
+            <p class="field-help"><span id="duration-estimate">预计时长 5.17 秒</span> · 更高分辨率和帧数会增加显存需求。</p>
+            <p class="field-help">官方 2K 再生成依赖托管模块，本工具不调用。更高自定义画幅为实验设置；增加步数不保证画质提升。</p>
+            <p class="field-help">官方 BasicGuider 路线固定 CFG 1、原生 24fps，不用封装帧率冒充重定时。自动精度以实际已安装模型为准。</p>
+          </div>
+        </details>
+
+        <div class="generate-area"><p id="form-error" class="form-error" role="alert" hidden></p><button id="generate-button" class="button button-primary" type="submit" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7zM4 5v14"/></svg><span id="generate-label">生成视频</span><span class="button-arrow" aria-hidden="true">→</span></button><p id="generate-note" class="generate-note">环境就绪后可生成 · 本地计算，不调用付费 API</p></div>
+      </form>
+
+      <div class="output-column">
+        <section class="output-panel" aria-labelledby="output-title"><div class="output-header"><h2 id="output-title">视频预览</h2><span id="output-status" class="neutral-badge">等待生成</span></div>
+          <div id="video-stage" class="video-stage"><div id="output-empty" class="output-empty"><span class="preview-symbol"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="10" width="36" height="28" rx="4"/><path d="m21 18 10 6-10 6z"/></svg></span><strong>把参考，变成一个完整镜头</strong><p>连接多张参考图并描述镜头后，生成视频会显示在这里。</p><span class="output-caption">MULTIFRAME REFERENCE · LOCAL INFERENCE</span></div><video id="video-player" controls playsinline preload="metadata" hidden></video><div id="job-working" class="job-working" hidden><span class="loader"></span><strong id="job-working-title">等待本地任务</strong><p id="job-working-message"></p><progress id="job-progress" max="100" aria-label="视频生成进度"></progress></div></div>
+          <div class="output-footer"><div><span id="output-details">尚无视频输出</span><small id="output-job-id">生成结果保存在本机</small></div><a id="download-video" class="button button-secondary" download hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg>下载视频</a></div>
+        </section>
+
+        <section class="environment-panel" aria-labelledby="environment-title"><div class="section-heading"><h2 id="environment-title">本地运行环境</h2><span class="field-hint">只读检查</span></div><div id="environment-checks" class="environment-checks"><div class="check-row"><span class="check-symbol pending">·</span><div><strong>连接 ComfyUI</strong><p>正在检查本机服务…</p></div></div></div><div class="environment-footnote"><span id="comfy-address">http://127.0.0.1:8188</span><span>不开放公网端口</span></div></section>
+      </div>
+    </div>
+
+    <section class="history-section" aria-labelledby="history-title"><div class="history-heading"><h2 id="history-title">最近任务 <span id="history-count">0</span></h2><span>仅显示此工作台的本地任务</span></div><div id="job-list" class="job-list"><p class="history-empty">还没有生成记录。完成第一个镜头后，会保存在这里。</p></div></section>
+  </main>
+
+  <footer class="site-footer"><span>H3 MOTION LAB</span><p>本地网页界面 · ComfyUI 推理 · 不接入收费云端 API</p><span>工作流就绪 ≠ 已通过实机生成测试</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
