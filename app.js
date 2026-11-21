@@ -15,14 +15,23 @@ function apiUrl(path) { return new URL(path, `${API_ORIGIN}/`).href; }
 async function api(path, options = {}) {
   // The per-process token protects loopback mutations from other browser origins.
   const mutation = options.method && !['GET', 'HEAD'].includes(options.method.toUpperCase());
-  const response = await fetch(apiUrl(path), { ...options, credentials: 'omit', headers: { ...(PUBLIC_MODE && state.pairToken ? { Authorization: `Bearer ${state.pairToken}` } : {}), ...(mutation && state.status?.csrfToken ? { 'X-CSRF-Token': state.status.csrfToken } : {}), ...options.headers }, cache: 'no-store' });
-  const json = await response.json().catch(() => null);
-  if (!response.ok) {
-    if (PUBLIC_MODE && response.status === 401) { state.pairToken = null; state.mediaToken = null; try { sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(MEDIA_KEY); } catch {} $('pair-message').textContent = '配对已失效，请在本机连接器查看新连接码并重新连接。'; }
-    throw new Error(typeof json?.error === 'string' ? json.error : json?.error?.message || json?.message || `本地服务请求失败（${response.status}）`);
-  }
-  if (!json) throw new Error('本地服务返回了无效响应，请刷新运行环境。');
-  return json;
+  const timeoutMs = path.startsWith('/api/pair') ? 10000 : path === '/api/uploads' ? 60000 : path.startsWith('/api/jobs') ? 30000 : 20000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(apiUrl(path), { ...options, signal: controller.signal, credentials: 'omit', headers: { ...(PUBLIC_MODE && state.pairToken ? { Authorization: `Bearer ${state.pairToken}` } : {}), ...(mutation && state.status?.csrfToken ? { 'X-CSRF-Token': state.status.csrfToken } : {}), ...options.headers }, cache: 'no-store' });
+    const json = await response.json().catch((error) => { if (controller.signal.aborted) throw error; return null; });
+    if (!response.ok) {
+      if (PUBLIC_MODE && response.status === 401) { state.pairToken = null; state.mediaToken = null; try { sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(MEDIA_KEY); } catch {} $('pair-message').textContent = '配对已失效，请在本机连接器查看新连接码并重新连接。'; }
+      throw new Error(typeof json?.error === 'string' ? json.error : json?.error?.message || json?.message || `本地服务请求失败（${response.status}）`);
+    }
+    if (!json) throw new Error('本地服务返回了无效响应，请刷新运行环境。');
+    return json;
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error(PUBLIC_MODE ? `连接本机引擎超时（${timeoutMs / 1000} 秒）。请使用 Chrome/Edge 并在站点设置允许“本地网络访问”，或点击“直接打开本机工作台”。` : `本机请求超时（${timeoutMs / 1000} 秒），请检查连接器和 ComfyUI 日志。`);
+    if (PUBLIC_MODE && error instanceof TypeError) throw new Error('浏览器无法访问本机引擎。请先启动连接器，使用 Chrome/Edge 允许“本地网络访问”；内嵌浏览器不可用时，请直接打开本机工作台。');
+    throw error;
+  } finally { clearTimeout(timer); }
 }
 
 function params() {
@@ -173,9 +182,9 @@ function renderReferences() {
   state.uploads.forEach((item, index) => {
     const card = document.createElement('article'); card.className = `reference-card ${item.error ? 'has-error' : ''}`;
     const head = document.createElement('div'); head.className = 'reference-card-head';
-    const img = document.createElement('img'); img.src = item.localUrl || safeLocalUrl(item.url); img.alt = `参考图 ${index + 1}：${item.name}`; img.className = 'reference-thumb';
+    const img = document.createElement('img'); if (PUBLIC_MODE && !item.localUrl) img.crossOrigin = 'anonymous'; img.src = item.localUrl || safeLocalUrl(item.url); img.alt = `参考图 ${index + 1}：${item.name}`; img.className = 'reference-thumb';
     const title = document.createElement('div'); title.className = 'reference-title';
-    const number = document.createElement('strong'); number.textContent = `参考图 ${index + 1} · <Picture${index + 1}>`;
+    const number = document.createElement('strong'); number.textContent = `参考图 ${index + 1} · <Picture ${index + 1}>`;
     const name = document.createElement('span'); name.textContent = item.name; name.title = item.name;
     const status = document.createElement('small'); status.className = item.error ? 'reference-error' : ''; status.textContent = item.error || (item.id ? `${item.width || '—'} × ${item.height || '—'} · ${formatBytes(item.bytes || 0)}` : '正在保存到本机…');
     title.append(number, name, status);
@@ -203,7 +212,7 @@ async function selectImages(files) {
   setFormError('');
   if (PUBLIC_MODE && !state.pairToken) { setFormError('请先使用上方连接码连接本机引擎，再添加参考图。'); $('pair-code').focus(); $('file-input').value = ''; return; }
   const types = ['image/png', 'image/jpeg', 'image/webp'];
-  const maxBytes = state.status?.limits?.maxUploadBytes;
+  const maxBytes = state.status?.limits?.uploadBytes ?? state.status?.limits?.maxUploadBytes;
   const remaining = 9 - state.uploads.length;
   if (remaining <= 0) { setFormError('每个镜头最多使用 9 张参考图，请先移除不需要的图片。'); return; }
   const selected = Array.from(files).slice(0, remaining);
@@ -359,7 +368,7 @@ $('drop-zone').addEventListener('drop', (event) => { event.preventDefault(); $('
 $('remove-image').addEventListener('click', clearImages);
 $('insert-reference-tags').addEventListener('click', () => {
   const field = $('prompt');
-  const text = state.uploads.map((item, index) => `<Picture${index + 1}>${item.label ? `（${item.label}）` : ''}`).join('、');
+  const text = state.uploads.map((item, index) => `<Picture ${index + 1}>${item.label ? `（${item.label}）` : ''}`).join('、');
   field.setRangeText(text, field.selectionStart, field.selectionEnd, 'end'); field.focus(); state.draftRestored = true; updateParams(); persistDraft();
 });
 $('refresh-status').addEventListener('click', async () => { await refreshStatus(); await loadJobs(); });
@@ -395,13 +404,16 @@ $('download-video').addEventListener('click', async (event) => {
   const job = state.jobs.find((item) => item.id === state.selectedId);
   const url = job && safeLocalUrl(job.downloadUrl || job.videoUrl);
   if (!url || !state.pairToken) return;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60000);
   try {
     showToast('正在从本机准备下载…');
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${state.pairToken}` }, credentials: 'omit', cache: 'no-store' });
+    const response = await fetch(url, { signal: controller.signal, headers: { Authorization: `Bearer ${state.pairToken}` }, credentials: 'omit', cache: 'no-store' });
     if (!response.ok) throw new Error(`下载失败（${response.status}）`);
     const blobUrl = URL.createObjectURL(await response.blob());
     const anchor = document.createElement('a'); anchor.href = blobUrl; anchor.download = `H3-${job.id}.mp4`; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-  } catch (error) { showToast(error.message); }
+  } catch (error) { showToast(controller.signal.aborted ? '视频下载超时。请在本机工作台下载，或检查浏览器本地网络权限。' : error.message); }
+  finally { clearTimeout(timer); }
 });
 $('public-pair-panel').hidden = !PUBLIC_MODE;
 if (PUBLIC_MODE) $('video-player').crossOrigin = 'anonymous';

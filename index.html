@@ -20,7 +20,7 @@
     <div class="page-heading"><div><p class="eyebrow">MINIMAX H3 / MULTI-FRAME REFERENCE</p><h1>多图参考视频<span>连接角色、场景和道具参考，可选中间帧约束。</span></h1></div><button id="refresh-status" class="button button-secondary refresh-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3"/></svg><span>检查运行环境</span></button></div>
 
     <section id="public-pair-panel" class="pair-panel" aria-labelledby="pair-title" hidden>
-      <div class="pair-intro"><p class="eyebrow">YOUR COMPUTER · YOUR GPU</p><h2 id="pair-title">连接你的本机引擎</h2><p>网站提供操作界面，视频在当前电脑的 ComfyUI 中计算。不会上传到本站，也不会调用收费 API。</p><ol><li>启动本机 ComfyUI，准备 H3 节点和模型。</li><li><a href="./downloads/minimax-h3-web.zip" download>下载本机连接器</a>，解压后运行启动脚本。</li><li>输入连接器页面上的 6 位连接码。浏览器询问本地网络权限时请选择允许。</li></ol></div>
+      <div class="pair-intro"><p class="eyebrow">YOUR COMPUTER · YOUR GPU</p><h2 id="pair-title">连接你的本机引擎</h2><p>网站提供操作界面，视频在当前电脑的 ComfyUI 中计算。不会上传到本站，也不会调用收费 API。</p><ol><li>启动本机 ComfyUI，准备 H3 节点和模型。</li><li><a href="./downloads/minimax-h3-web.zip" download>下载本机连接器</a>，解压后运行启动脚本。</li><li>使用 Chrome 或 Edge，输入 6 位连接码，并允许本站访问本地网络。</li></ol><p class="pair-fallback">内嵌浏览器无法连接？<a href="http://127.0.0.1:9860/" target="_blank" rel="noopener">直接打开本机工作台 ↗</a><br>本机工作台无需公网网页配对，使用相同的本地引擎。</p></div>
       <form id="pair-form" class="pair-form"><label>本机连接器<input type="text" value="http://127.0.0.1:9860" readonly aria-label="本机连接器地址"></label><label for="pair-code">网页连接码<input id="pair-code" type="text" inputmode="numeric" autocomplete="off" maxlength="6" pattern="[0-9]{6}" placeholder="6 位数字" required></label><button id="pair-button" class="button button-primary" type="submit">连接本机引擎 <span aria-hidden="true">→</span></button><p id="pair-message" class="field-help" aria-live="polite">连接码只发往当前电脑的本机连接器。</p></form>
     </section>
     <div id="local-pair-code" class="local-pair-code" hidden><span>公网网页连接码 <strong id="local-code-value"></strong></span><button id="copy-pair-code" class="text-button" type="button">复制</button><small>仅供你在自己的浏览器配对，请勿发送给他人。</small></div>
@@ -43,7 +43,7 @@
         <section class="form-section prompt-section">
           <div class="section-heading"><h2><label for="prompt"><span class="step-number">02</span>描述镜头</label></h2><button id="insert-reference-tags" class="text-button" type="button">插入参考编号</button><span id="prompt-count" class="field-hint">0 字</span></div>
           <textarea id="prompt" name="prompt" rows="5" maxlength="12000" placeholder="描述各张参考图的用途、主体动作、运镜与光线。&#10;&#10;例如：采用参考图 1 的角色外形，在参考图 2 的场景中缓慢行走，手持参考图 3 的盾牌。镜头平稳跟随，保持造型和材质一致。" required aria-describedby="prompt-tip"></textarea>
-          <p id="prompt-tip" class="field-help">用 &lt;Picture1&gt;、&lt;Picture2&gt; 指定参考用途，再写动作与运镜。图片顺序不是视频时间顺序。</p>
+          <p id="prompt-tip" class="field-help">用 &lt;Picture 1&gt;、&lt;Picture 2&gt; 指定参考用途，再写动作与运镜。图片顺序不是视频时间顺序。</p>
         </section>
 
         <details class="advanced-panel" id="advanced-params">
